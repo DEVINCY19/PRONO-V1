@@ -1,4 +1,6 @@
+js
 const { createClient } = require('@supabase/supabase-js');
+const https = require('https');
 
 module.exports = async (req, res) => {
   const supabase = createClient(
@@ -6,45 +8,38 @@ module.exports = async (req, res) => {
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 
-  const API_KEY = 'fapi_4HHy3OycT7MKCAjhDQ9Kg9WvZHGltV9j';
+  const options = {
+    hostname: 'api.football-data.org',
+    path: '/v4/competitions/FL1/matches',
+    headers: { 'X-Auth-Token': 'fapi_4HHy3OycT7MKCAjhDQ9Kg9WvZHGltV9j' }
+  };
 
-  try {
-    // 1. Récupération des matchs Ligue 1 (FL1)
-    const response = await fetch('https://api.football-data.org/v4/competitions/FL1/matches', {
-      headers: { 'X-Auth-Token': API_KEY }
-    });
-    const data = await response.json();
+  https.get(options, (apiRes) => {
+    let body = '';
+    apiRes.on('data', (d) => body += d);
+    apiRes.on('end', async () => {
+      try {
+        const data = JSON.parse(body);
+        if (!data.matches) throw new Error("Format API invalide");
 
-    if (!data.matches) return res.status(500).json({ error: "Erreur API Football" });
+        const matches = data.matches.map(m => ({
+          id: m.id,
+          match_date: m.utcDate,
+          league: 'Ligue 1',
+          status: m.status,
+          team_home_id: m.homeTeam.id,
+          team_away_id: m.awayTeam.id
+        }));
 
-    for (const match of data.matches) {
-      // 2. Création/Mise à jour automatique des équipes (Domicile & Extérieur)
-      const teams = [match.homeTeam, match.awayTeam];
-      
-      for (const team of teams) {
-        await supabase.from('teams').upsert({
-          id: team.id,
-          name: team.name,
-          logo: team.crest // L'API fournit directement l'URL du logo (crest)
-        });
+        const { error } = await supabase.from('matches').upsert(matches);
+        if (error) throw error;
+
+        res.status(200).json({ success: true, count: matches.length });
+      } catch (err) {
+        res.status(500).json({ error: err.message });
       }
-
-      // 3. Insertion du match lié aux IDs des équipes
-      await supabase.from('matches').upsert({
-        id: match.id,
-        match_date: match.utcDate,
-        team_home_id: match.homeTeam.id,
-        team_away_id: match.awayTeam.id,
-        league: 'Ligue 1',
-        status: match.status,
-        // Si les scores sont dispo, on les met à jour
-        SCORE_HOME: match.score.fullTime.home,
-        SCORE_AWAY: match.score.fullTime.away
-      });
-    }
-
-    res.status(200).json({ success: true, message: "Equipes et Matchs synchronisés avec succès !" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    });
+  }).on('error', (e) => {
+    res.status(500).json({ error: e.message });
+  });
 };
