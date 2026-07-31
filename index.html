@@ -12,68 +12,86 @@
             <h1 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-2 italic">PRONO FOOT PRO</h1>
         </header>
 
-        <!-- NOUVEAU : Menu de Navigation -->
+        <!-- Menu de Navigation -->
         <div class="flex justify-center space-x-4 mb-8">
-            <button id="btn-matchs" class="px-6 py-2 bg-green-600 rounded-full font-bold text-white shadow-lg">Matchs</button>
-            <button id="btn-resultats" class="px-6 py-2 bg-gray-800 rounded-full font-bold text-gray-400 hover:bg-gray-700 transition">Résultats</button>
+            <button id="btn-matchs" class="px-6 py-2 bg-green-600 rounded-full font-bold text-white shadow-lg transition-all duration-300">Matchs</button>
+            <button id="btn-resultats" class="px-6 py-2 bg-gray-800 rounded-full font-bold text-gray-400 hover:bg-gray-700 transition-all duration-300">Résultats</button>
         </div>
 
-        <!-- La Grille (utilisée pour les deux vues) -->
+        <!-- Zone d'affichage -->
         <div id="display-grid" class="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            <!-- Le contenu sera injecté ici par JavaScript -->
+            <div class="col-span-full text-center py-20 text-gray-500">Initialisation...</div>
         </div>
     </div>
 
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-        const supabase = createClient('VOTRE_URL', 'VOTRE_CLE');
+        
+        const SUPABASE_URL = 'https://cmufapilshppnqulbdrk.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNtdWZhcGlsc2hwcG5xdWxiZHJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0NDA4NzAsImV4cCI6MjEwMTAxNjg3MH0.UI0GKMfQgIGby_Tu_Q5Q4hOCpASxRe63pHLVr5lPOV0';
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const grid = document.getElementById('display-grid');
         const btnMatchs = document.getElementById('btn-matchs');
         const btnResultats = document.getElementById('btn-resultats');
 
-        // FONCTION 1 : AFFICHER LES MATCHS À VENIR (AVEC 1-N-2)
+        // 1. Vue des Matchs à venir
         async function loadMatchs() {
-            btnMatchs.className = 'px-6 py-2 bg-green-600 rounded-full font-bold text-white shadow-lg';
-            btnResultats.className = 'px-6 py-2 bg-gray-800 rounded-full font-bold text-gray-400';
-            
-            const { data: matches } = await supabase
+            btnMatchs.className = 'px-6 py-2 bg-green-600 rounded-full font-bold text-white shadow-lg shadow-green-900/40';
+            btnResultats.className = 'px-6 py-2 bg-gray-800 rounded-full font-bold text-gray-400 hover:text-white';
+            grid.innerHTML = '<div class="col-span-full text-center py-10">Chargement...</div>';
+
+            const { data: matches, error } = await supabase
                 .from('matches')
                 .select('*, home:team_home_id(name, logo), away:team_away_id(name, logo)')
-                .is('score_home', null); // On prend ceux qui n'ont pas encore de score
+                .is('SCORE_HOME', null);
+
+            if (!matches || matches.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center py-20 bg-gray-800 rounded-3xl border border-gray-700 text-gray-500">Aucun match à venir.</div>';
+                return;
+            }
 
             grid.innerHTML = matches.map(m => `
-                <div class="bg-gray-800 border border-gray-700 rounded-3xl p-6 shadow-2xl">
-                    <div class="flex items-center justify-between mb-6">
+                <div class="bg-gray-800 border border-gray-700 rounded-3xl p-6 shadow-2xl flex flex-col">
+                    <div class="flex items-center justify-between mb-8">
                         <div class="flex flex-col items-center flex-1">
-                            <img src="${m.home?.logo}" class="w-16 h-16 object-contain mb-2">
-                            <span class="font-bold text-xs text-center">${m.home?.name}</span>
+                            <div class="w-16 h-16 bg-gray-900 rounded-full flex items-center justify-center p-2 mb-2 border border-gray-700 shadow-xl">
+                                <img src="${m.home?.logo}" class="max-w-full max-h-full object-contain">
+                            </div>
+                            <span class="font-bold text-xs text-white text-center">${m.home?.name}</span>
                         </div>
-                        <div class="px-2 font-black text-gray-600 italic">VS</div>
+                        <div class="px-2 font-black text-green-500 italic text-xl">VS</div>
                         <div class="flex flex-col items-center flex-1">
-                            <img src="${m.away?.logo}" class="w-16 h-16 object-contain mb-2">
-                            <span class="font-bold text-xs text-center">${m.away?.name}</span>
+                            <div class="w-16 h-16 bg-gray-900 rounded-full flex items-center justify-center p-2 mb-2 border border-gray-700 shadow-xl">
+                                <img src="${m.away?.logo}" class="max-w-full max-h-full object-contain">
+                            </div>
+                            <span class="font-bold text-xs text-white text-center">${m.away?.name}</span>
                         </div>
                     </div>
-                    <!-- Boutons 1-N-2 -->
-                    <div class="flex gap-2 mt-4">
-                        <button class="flex-1 bg-gray-700 hover:bg-green-600 py-2 rounded-xl font-bold text-white transition-colors">1</button>
-                        <button class="flex-1 bg-gray-700 hover:bg-blue-600 py-2 rounded-xl font-bold text-white transition-colors">N</button>
-                        <button class="flex-1 bg-gray-700 hover:bg-red-600 py-2 rounded-xl font-bold text-white transition-colors">2</button>
+                    <div class="flex gap-2">
+                        <button class="flex-1 bg-gray-700 hover:bg-green-600 py-2 rounded-xl font-bold transition-all border border-gray-600">1</button>
+                        <button class="flex-1 bg-gray-700 hover:bg-blue-600 py-2 rounded-xl font-bold transition-all border border-gray-600">N</button>
+                        <button class="flex-1 bg-gray-700 hover:bg-red-600 py-2 rounded-xl font-bold transition-all border border-gray-600">2</button>
                     </div>
                 </div>
             `).join('');
         }
 
-        // FONCTION 2 : AFFICHER LES RÉSULTATS (AVEC SCORES)
+        // 2. Vue des Résultats
         async function loadResultats() {
-            btnResultats.className = 'px-6 py-2 bg-green-600 rounded-full font-bold text-white shadow-lg';
-            btnMatchs.className = 'px-6 py-2 bg-gray-800 rounded-full font-bold text-gray-400';
+            btnResultats.className = 'px-6 py-2 bg-green-600 rounded-full font-bold text-white shadow-lg shadow-green-900/40';
+            btnMatchs.className = 'px-6 py-2 bg-gray-800 rounded-full font-bold text-gray-400 hover:text-white';
+            grid.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500">Récupération des scores...</div>';
 
-            const { data: results } = await supabase
+            const { data: results, error } = await supabase
                 .from('matches')
                 .select('*, home:team_home_id(name, logo), away:team_away_id(name, logo)')
-                .not('score_home', 'is', null); // On prend ceux qui ONT un score
+                .not('SCORE_HOME', 'is', null);
+
+            if (!results || results.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center py-20 bg-gray-800 rounded-3xl border border-gray-700 text-gray-500">Aucun résultat terminé.</div>';
+                return;
+            }
 
             grid.innerHTML = results.map(r => `
                 <div class="bg-gray-800 border-2 border-green-500/20 rounded-3xl p-6 shadow-2xl relative">
@@ -83,7 +101,7 @@
                             <img src="${r.home?.logo}" class="w-12 h-12 object-contain mb-1">
                             <span class="text-[10px] font-bold">${r.home?.name}</span>
                         </div>
-                        <div class="text-3xl font-black text-white px-4">${r.score_home} - ${r.score_away}</div>
+                        <div class="text-3xl font-black text-white px-4">${r.SCORE_HOME} - ${r.SCORE_AWAY}</div>
                         <div class="flex flex-col items-center flex-1">
                             <img src="${r.away?.logo}" class="w-12 h-12 object-contain mb-1">
                             <span class="text-[10px] font-bold">${r.away?.name}</span>
@@ -93,11 +111,11 @@
             `).join('');
         }
 
-        // Écouteurs d'événements pour le menu
-        btnMatchs.onclick = loadMatchs;
-        btnResultats.onclick = loadResultats;
+        // Événements
+        btnMatchs.addEventListener('click', loadMatchs);
+        btnResultats.addEventListener('click', loadResultats);
 
-        // Charger les matchs par défaut au démarrage
+        // Lancement au démarrage
         loadMatchs();
     </script>
 </body>
