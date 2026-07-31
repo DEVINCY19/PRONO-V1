@@ -1,8 +1,6 @@
-js
-const { createClient } = require('@supabase/supabase-js');
+import { createClient } from '@supabase/supabase-js';
 
-module.exports = async (req, res) => {
-  // Initialisation avec la variable d'environnement que vous avez créée
+export default async function handler(req, res) {
   const supabase = createClient(
     'https://cmufapilshppnqulbdrk.supabase.co',
     process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -16,26 +14,25 @@ module.exports = async (req, res) => {
     });
     const data = await response.json();
 
-    if (!data.matches) {
-        return res.status(500).json({ error: "Impossible de récupérer les matchs de l'API." });
-    }
+    if (!data.matches) throw new Error("Erreur API Football-Data");
 
-    // On prépare les données pour Supabase
-    const matches = data.matches.map(m => ({
+    const updates = data.matches.map(m => ({
       id: m.id,
       match_date: m.utcDate,
       league: 'Ligue 1',
       status: m.status,
-      team_home_id: 1, // Temporaire : à lier avec vos IDs réels plus tard
-      team_away_id: 2
+      team_home_id: m.homeTeam.id,
+      team_away_id: m.awayTeam.id,
+      SCORE_HOME: m.score.fullTime.home,
+      SCORE_AWAY: m.score.fullTime.away
     }));
 
-    const { error } = await supabase.from('matches').upsert(matches);
-
+    // On insère ou met à jour les matchs
+    const { error } = await supabase.from('matches').upsert(updates);
     if (error) throw error;
 
-    res.status(200).json({ success: true, message: `${matches.length} matchs synchronisés.` });
+    res.status(200).json({ success: true, message: `${updates.length} matchs synchronisés.` });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-};
+}
