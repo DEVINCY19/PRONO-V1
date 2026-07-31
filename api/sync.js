@@ -1,4 +1,4 @@
-// api/sync.js pour TheStatsAPI
+// api/sync.js - Version TheStatsAPI corrigée
 export default async function handler(req, res) {
   const API_KEY = process.env.API_FOOTBALL_KEY;
   const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -9,33 +9,34 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 1. Appel THESTATSAPI pour Ligue 1 France id=16
-    const today = new Date().toISOString().split('T')[0];
-    const apiUrl = `https://api.thestatsapi.com/v1/fixtures?competition_id=16&date_from=${today}&date_to=${today}`;
-    
-    const apiRes = await fetch(apiUrl, {
-      headers: { 'x-api-key': API_KEY }
+    // 1. Appel THESTATSAPI - endpoint fixtures pour Ligue 1 (ID 16)
+    const apiRes = await fetch(`https://api.thestatsapi.com/v1/fixtures?competition_id=16`, {
+      headers: {
+        'x-api-key': API_KEY,
+        'Accept': 'application/json'
+      }
     });
-    
-    const data = await apiRes.json();
 
-    if (data.error) {
-      return res.status(500).json({ error: "Erreur API TheStatsAPI", details: data.error });
+    if (!apiRes.ok) {
+      const errorData = await apiRes.json();
+      return res.status(500).json({ error: "Erreur API TheStatsAPI", details: errorData });
     }
 
-    // Extraction des matchs depuis la propriété data.data
+    const data = await apiRes.json();
+
+    // Mapping des données reçues vers votre structure Supabase
     const matches = data.data.map(m => ({
       id: m.id,
-      match_date: m.start_time,
-      league: m.competition.name,
+      match_date: m.start_date,
+      league: "Ligue 1",
       status: m.status,
-      team_home_id: m.home_team.id,
-      team_away_id: m.away_team.id,
-      team_home_name: m.home_team.name,
-      team_away_name: m.away_team.name
+      team_home_id: m.home_team_id,
+      team_away_id: m.away_team_id,
+      team_home_name: m.home_team_name,
+      team_away_name: m.away_team_name
     }));
 
-    // 2. Envoi à Supabase (Upsert / Merge)
+    // 2. Envoi à Supabase via REST API (Upsert)
     const dbRes = await fetch(`${SUPABASE_URL}/rest/v1/matches`, {
       method: 'POST',
       headers: {
@@ -52,8 +53,16 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Erreur Supabase", details: errorText });
     }
 
-    return res.status(200).json({ success: true, count: matches.length });
+    return res.status(200).json({ 
+      success: true, 
+      count: matches.length,
+      message: "Synchronisation terminée avec succès" 
+    });
+
   } catch (err) {
-    return res.status(500).json({ error: "Erreur Serveur", message: err.message });
+    return res.status(500).json({ 
+      error: "Erreur Serveur", 
+      message: err.message 
+    });
   }
 }
