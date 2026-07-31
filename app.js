@@ -1,5 +1,5 @@
 const SUPABASE_URL = 'https://cmufapilshppnqulbdrk.supabase.co'
-const SUPABASE_ANON_KEY = 'VOTRE_ANON_PUBLIC_KEY' // Assurez-vous que c'est bien la clé "anon"
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNtdWZhcGlsc2hwcG5xdWxiZHJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0NDA4NzAsImV4cCI6MjEwMTAxNjg3MH0.UI0GKMfQgIGby_Tu_Q5Q4hOCpASxRe63pHLVr5lPOV0' // Assurez-vous que c'est bien la clé "anon"
 
 // Utilisation de supabase.createClient car chargé via script CDN
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
