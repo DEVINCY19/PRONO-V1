@@ -1,16 +1,28 @@
-<!-- 1. Tailwind pour le style -->
-<script src="https://cdn.tailwindcss.com"></script>
-
-<!-- 2. Supabase (Bibliothèque) - Important : bien charger celle-ci avant app.js -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-
-<!-- 3. Votre code application -->
-<script src="https://prono-v1.vercel.app/app.js" defer></script>
-
-<!-- 4. Le conteneur qui recevra les matchs (assurez-vous qu'il existe) -->
-<div class="container mx-auto p-4">
-    <h1 class="text-2xl font-bold mb-4">⚽ Prono Foot Pro</h1>
-    <div id="matches-container" class="grid gap-4">
-        <!-- Les matchs s'afficheront ici -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Prono Foot Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="container mx-auto p-4">
+        <h1 class="text-2xl font-bold mb-4">⚽ Prono Foot Pro</h1>
+        <!-- La grille où les matchs s'afficheront -->
+        <div id="matches-container" class="grid gap-4"></div>
     </div>
-</div>
+
+    <!-- Chargement de Supabase en tant que Module -->
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+        
+        // On rend supabase disponible globalement pour votre fichier app.js
+        window.supabase = { createClient };
+
+        // Ensuite, on charge votre script app.js
+        const script = document.createElement('script');
+        script.src = 'https://prono-v1.vercel.app/app.js';
+        document.body.appendChild(script);
+    </script>
+</body>
+</html>
