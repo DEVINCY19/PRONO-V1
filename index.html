@@ -5,22 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>⚽ Prono Foot Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .match-card { transition: all 0.3s ease; }
+        .match-card:hover { transform: translateY(-5px); border-color: #22c55e; }
+    </style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen">
+<body class="bg-gray-900 text-gray-100 min-h-screen font-sans">
     <div class="container mx-auto px-4 py-8">
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-2 italic">PRONO FOOT PRO</h1>
+        <header class="text-center mb-10">
+            <h1 class="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 italic uppercase tracking-tighter">PRONO FOOT PRO</h1>
+            <p class="text-gray-500 mt-2 font-medium tracking-widest">ANALYSES & PRONOSTICS</p>
         </header>
 
-        <!-- Menu de Navigation -->
-        <div class="flex justify-center space-x-4 mb-8">
-            <button id="btn-matchs" class="px-6 py-2 bg-green-600 rounded-full font-bold text-white shadow-lg transition-all duration-300">Matchs</button>
-            <button id="btn-resultats" class="px-6 py-2 bg-gray-800 rounded-full font-bold text-gray-400 hover:bg-gray-700 transition-all duration-300">Résultats</button>
+        <!-- Menu Navigation -->
+        <div class="flex justify-center space-x-4 mb-10">
+            <button id="btn-matchs" class="px-8 py-2.5 bg-green-600 rounded-full font-bold text-white shadow-lg shadow-green-900/40 transition-all">Matchs</button>
+            <button id="btn-resultats" class="px-8 py-2.5 bg-gray-800 rounded-full font-bold text-gray-400 hover:text-white transition-all">Résultats</button>
         </div>
 
-        <!-- Zone d'affichage -->
-        <div id="display-grid" class="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            <div class="col-span-full text-center py-20 text-gray-500">Initialisation...</div>
+        <!-- Grille d'affichage -->
+        <div id="display-grid" class="grid gap-8 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 text-white">
+            <div class="col-span-full text-center py-20 text-gray-500 animate-pulse text-xl font-bold italic">Initialisation du système...</div>
         </div>
     </div>
 
@@ -35,43 +40,73 @@
         const btnMatchs = document.getElementById('btn-matchs');
         const btnResultats = document.getElementById('btn-resultats');
 
-        // 1. Vue des Matchs à venir
+        // Fonction pour générer les pastilles de forme (V, N, D)
+        function getFormBadges(formStr) {
+            if (!formStr) return '<span class="text-[9px] text-gray-600 italic">Pas de stats</span>';
+            return formStr.split('').map(res => {
+                let color = 'bg-gray-600';
+                if (res === 'V') color = 'bg-green-500';
+                if (res === 'D') color = 'bg-red-500';
+                if (res === 'N') color = 'bg-blue-500';
+                return `<span class="w-2.5 h-2.5 ${color} rounded-full inline-block mx-0.5 border border-black/20 shadow-sm"></span>`;
+            }).join('');
+        }
+
+        // 1. Vue des Matchs avec Stats & 1-N-2
         async function loadMatchs() {
-            btnMatchs.className = 'px-6 py-2 bg-green-600 rounded-full font-bold text-white shadow-lg shadow-green-900/40';
-            btnResultats.className = 'px-6 py-2 bg-gray-800 rounded-full font-bold text-gray-400 hover:text-white';
-            grid.innerHTML = '<div class="col-span-full text-center py-10">Chargement...</div>';
+            btnMatchs.className = 'px-8 py-2.5 bg-green-600 rounded-full font-bold text-white shadow-lg shadow-green-900/40 transition-all scale-105';
+            btnResultats.className = 'px-8 py-2.5 bg-gray-800 rounded-full font-bold text-gray-400 hover:text-white transition-all';
+            grid.innerHTML = '<div class="col-span-full text-center py-10 italic">Analyse des données en cours...</div>';
 
             const { data: matches, error } = await supabase
                 .from('matches')
-                .select('*, home:team_home_id(name, logo), away:team_away_id(name, logo)')
+                .select('*, home:team_home_id(name, logo, form, attack, defense), away:team_away_id(name, logo, form, attack, defense)')
                 .is('SCORE_HOME', null);
 
             if (!matches || matches.length === 0) {
-                grid.innerHTML = '<div class="col-span-full text-center py-20 bg-gray-800 rounded-3xl border border-gray-700 text-gray-500">Aucun match à venir.</div>';
+                grid.innerHTML = '<div class="col-span-full text-center py-20 text-gray-500 border border-dashed border-gray-700 rounded-3xl">Aucune rencontre prévue.</div>';
                 return;
             }
 
             grid.innerHTML = matches.map(m => `
-                <div class="bg-gray-800 border border-gray-700 rounded-3xl p-6 shadow-2xl flex flex-col">
-                    <div class="flex items-center justify-between mb-8">
-                        <div class="flex flex-col items-center flex-1">
-                            <div class="w-16 h-16 bg-gray-900 rounded-full flex items-center justify-center p-2 mb-2 border border-gray-700 shadow-xl">
+                <div class="match-card bg-gray-800 border border-gray-700 rounded-[2.5rem] p-7 shadow-2xl flex flex-col justify-between">
+                    <div class="flex items-center justify-between mb-6 text-center">
+                        <div class="flex-1 flex flex-col items-center">
+                            <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center p-2.5 mb-2 shadow-xl border-4 border-gray-900">
                                 <img src="${m.home?.logo}" class="max-w-full max-h-full object-contain">
                             </div>
-                            <span class="font-bold text-xs text-white text-center">${m.home?.name}</span>
+                            <span class="font-black text-[11px] uppercase tracking-tighter">${m.home?.name}</span>
+                            <div class="mt-1 flex items-center">${getFormBadges(m.home?.form)}</div>
                         </div>
-                        <div class="px-2 font-black text-green-500 italic text-xl">VS</div>
-                        <div class="flex flex-col items-center flex-1">
-                            <div class="w-16 h-16 bg-gray-900 rounded-full flex items-center justify-center p-2 mb-2 border border-gray-700 shadow-xl">
+                        <div class="px-2 font-black text-green-500 italic text-2xl drop-shadow-lg">VS</div>
+                        <div class="flex-1 flex flex-col items-center">
+                            <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center p-2.5 mb-2 shadow-xl border-4 border-gray-900">
                                 <img src="${m.away?.logo}" class="max-w-full max-h-full object-contain">
                             </div>
-                            <span class="font-bold text-xs text-white text-center">${m.away?.name}</span>
+                            <span class="font-black text-[11px] uppercase tracking-tighter">${m.away?.name}</span>
+                            <div class="mt-1 flex items-center">${getFormBadges(m.away?.form)}</div>
                         </div>
                     </div>
-                    <div class="flex gap-2">
-                        <button class="flex-1 bg-gray-700 hover:bg-green-600 py-2 rounded-xl font-bold transition-all border border-gray-600">1</button>
-                        <button class="flex-1 bg-gray-700 hover:bg-blue-600 py-2 rounded-xl font-bold transition-all border border-gray-600">N</button>
-                        <button class="flex-1 bg-gray-700 hover:bg-red-600 py-2 rounded-xl font-bold transition-all border border-gray-600">2</button>
+
+                    <!-- Bloc Stats Comparatif -->
+                    <div class="bg-gray-900/70 rounded-2xl p-4 mb-6 space-y-3 border border-gray-700/50">
+                        <div class="text-center">
+                            <div class="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1.5 italic">Indice d'Attaque</div>
+                            <div class="flex items-center gap-2 justify-center">
+                                <span class="text-xs font-black text-green-400 w-4 text-left">${m.home?.attack}</span>
+                                <div class="flex-1 h-1.5 bg-gray-800 rounded-full overflow-hidden flex max-w-[100px]">
+                                    <div class="bg-green-500 h-full border-r border-black/50" style="width: ${(m.home?.attack / (m.home?.attack + m.away?.attack || 1)) * 100}%"></div>
+                                    <div class="bg-blue-500 h-full" style="width: ${(m.away?.attack / (m.home?.attack + m.away?.attack || 1)) * 100}%"></div>
+                                </div>
+                                <span class="text-xs font-black text-blue-400 w-4 text-right">${m.away?.attack}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button class="flex-1 bg-gray-700 hover:bg-green-600 py-3 rounded-2xl font-black text-lg transition-all border border-gray-600 shadow-md">1</button>
+                        <button class="flex-1 bg-gray-700 hover:bg-blue-600 py-3 rounded-2xl font-black text-lg transition-all border border-gray-600 shadow-md">N</button>
+                        <button class="flex-1 bg-gray-700 hover:bg-red-600 py-3 rounded-2xl font-black text-lg transition-all border border-gray-600 shadow-md">2</button>
                     </div>
                 </div>
             `).join('');
@@ -79,43 +114,35 @@
 
         // 2. Vue des Résultats
         async function loadResultats() {
-            btnResultats.className = 'px-6 py-2 bg-green-600 rounded-full font-bold text-white shadow-lg shadow-green-900/40';
-            btnMatchs.className = 'px-6 py-2 bg-gray-800 rounded-full font-bold text-gray-400 hover:text-white';
-            grid.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500">Récupération des scores...</div>';
+            btnResultats.className = 'px-8 py-2.5 bg-green-600 rounded-full font-bold text-white shadow-lg shadow-green-900/40 transition-all scale-105';
+            btnMatchs.className = 'px-8 py-2.5 bg-gray-800 rounded-full font-bold text-gray-400 hover:text-white transition-all';
+            grid.innerHTML = '<div class="col-span-full text-center py-10 italic">Récupération des scores finaux...</div>';
 
             const { data: results, error } = await supabase
                 .from('matches')
                 .select('*, home:team_home_id(name, logo), away:team_away_id(name, logo)')
                 .not('SCORE_HOME', 'is', null);
 
-            if (!results || results.length === 0) {
-                grid.innerHTML = '<div class="col-span-full text-center py-20 bg-gray-800 rounded-3xl border border-gray-700 text-gray-500">Aucun résultat terminé.</div>';
-                return;
-            }
-
             grid.innerHTML = results.map(r => `
-                <div class="bg-gray-800 border-2 border-green-500/20 rounded-3xl p-6 shadow-2xl relative">
-                    <div class="absolute top-3 right-3 bg-green-500 text-black text-[9px] font-black px-2 py-0.5 rounded uppercase">Terminé</div>
-                    <div class="flex items-center justify-between">
+                <div class="bg-gray-800 border-2 border-green-500/20 rounded-[2.5rem] p-7 shadow-2xl relative">
+                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-500 text-black text-[10px] font-black px-4 py-1 rounded-full uppercase tracking-widest shadow-lg">Terminé</div>
+                    <div class="flex items-center justify-between mt-2">
                         <div class="flex flex-col items-center flex-1">
-                            <img src="${r.home?.logo}" class="w-12 h-12 object-contain mb-1">
-                            <span class="text-[10px] font-bold">${r.home?.name}</span>
+                            <img src="${r.home?.logo}" class="w-14 h-14 object-contain mb-2">
+                            <span class="text-[10px] font-black uppercase text-gray-400">${r.home?.name}</span>
                         </div>
-                        <div class="text-3xl font-black text-white px-4">${r.SCORE_HOME} - ${r.SCORE_AWAY}</div>
+                        <div class="text-4xl font-black text-white px-6 italic tracking-tighter">${r.SCORE_HOME} - ${r.SCORE_AWAY}</div>
                         <div class="flex flex-col items-center flex-1">
-                            <img src="${r.away?.logo}" class="w-12 h-12 object-contain mb-1">
-                            <span class="text-[10px] font-bold">${r.away?.name}</span>
+                            <img src="${r.away?.logo}" class="w-14 h-14 object-contain mb-2">
+                            <span class="text-[10px] font-black uppercase text-gray-400">${r.away?.name}</span>
                         </div>
                     </div>
                 </div>
             `).join('');
         }
 
-        // Événements
         btnMatchs.addEventListener('click', loadMatchs);
         btnResultats.addEventListener('click', loadResultats);
-
-        // Lancement au démarrage
         loadMatchs();
     </script>
 </body>
