@@ -1,6 +1,49 @@
-const SUPABASE_URL = 'https://cmufapilshppnqulbdrk.supabase.co'const SUPABASE_ANON_KEY = 'sb_publishable_bdSUWUdU14J2U4r52NbWlg__iLMaJb_'
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-async function loadMatches() {const{ data, error } = await supabase.from('matches').select(`*, home_team:teams!matches_home_team_id_fkey(name), away_team:teams!matches_away_team_id_fkey(name)`).order('match_date', { ascending: true })
-const container = document.getElementById('matches')if(error) {container.innerHTML = `<p style="color:red">Erreur: ${error.message}</p>` return} if(!data || data.length === 0) {container.innerHTML = `<p>Aucun match trouvé</p>` return}
-container.innerHTML = data.map(match => ` <div class="bg-gray-800 p-4 rounded-lg mb-4"><p class="text-sm text-gray-400">${new Date(match.match_date).toLocaleString('fr-FR')}</p><p class="text-xl font-bold">${match.home_team.name} VS ${match.away_team.name}</p></div> `).join('')}
+const SUPABASE_URL = 'https://cmufapilshppnqulbdrk.supabase.co'
+const SUPABASE_ANON_KEY = 'VOTRE_ANON_PUBLIC_KEY' // Assurez-vous que c'est bien la clé "anon"
+
+// Utilisation de supabase.createClient car chargé via script CDN
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+async function loadMatches() {
+    const container = document.getElementById('matches')
+    
+    try {
+        const { data, error } = await supabaseClient
+            .from('matches')
+            .select(`
+                *,
+                home_team:teams!home_team_id(name),
+                away_team:teams!away_team_id(name)
+            `)
+            .order('match_date', { ascending: true })
+
+        if (error) throw error
+
+        if (!data || data.length === 0) {
+            container.innerHTML = `<p class="text-center text-gray-400">Aucun match trouvé</p>`
+            return
+        }
+
+        container.innerHTML = data.map(match => `
+            <div class="bg-gray-800 p-4 rounded-lg shadow-md border border-gray-700 mb-4">
+                <p class="text-xs text-green-400 font-semibold mb-1">
+                    ${new Date(match.match_date).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
+                </p>
+                <div class="flex justify-between items-center">
+                    <span class="text-lg font-bold">${match.home_team?.name || 'Équipe A'}</span>
+                    <span class="text-gray-500 font-bold px-2">VS</span>
+                    <span class="text-lg font-bold text-right">${match.away_team?.name || 'Équipe B'}</span>
+                </div>
+            </div>
+        `).join('')
+
+    } catch (error) {
+        console.error("Erreur complète:", error)
+        if (container) {
+            container.innerHTML = `<p class="text-red-500 bg-red-100 p-3 rounded">Erreur: ${error.message}</p>`
+        }
+    }
+}
+
+// Lancer le chargement
 loadMatches()
