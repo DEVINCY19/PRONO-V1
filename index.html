@@ -1,17 +1,16 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Prono Foot Pro</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-</head>
-<body class="bg-gray-900 text-white">
-  <div class="container mx-auto p-4">
-    <h1 class="text-3xl font-bold text-center mb-6 text-green-400">⚽ Prono Foot Pro</h1>
-    <div id="matches" class="grid gap-4"></div>
-  </div>
-  <script src="app.js"></script>
-</body>
-</html>
+<!-- 1. Tailwind pour le style -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- 2. Supabase (Bibliothèque) - Important : bien charger celle-ci avant app.js -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+
+<!-- 3. Votre code application -->
+<script src="https://prono-v1.vercel.app/app.js" defer></script>
+
+<!-- 4. Le conteneur qui recevra les matchs (assurez-vous qu'il existe) -->
+<div class="container mx-auto p-4">
+    <h1 class="text-2xl font-bold mb-4">⚽ Prono Foot Pro</h1>
+    <div id="matches-container" class="grid gap-4">
+        <!-- Les matchs s'afficheront ici -->
+    </div>
+</div>
