@@ -1,4 +1,4 @@
-const SUPABASE_URL = 'https://axhyctwnwazjogxatgxq.supabase.co'const SUPABASE_ANON_KEY = 'sb_publishable_bdSUwUdU14J2U4r52NbWlg__iLMaJb_'const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+const SUPABASE_URL = 'const SUPABASE_URL = 'https://cmufapilshppnqulbdrk.supabase.co'const SUPABASE_ANON_KEY = 'sb_publishable_bdSUwUdU14J2U4r52NbWlg__iLMaJb_'const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 async function loadMatches() {  const matchesDiv = document.getElementById('matches')  matchesDiv.innerHTML = '<p>Chargement...</p>'
   const { data: teams, error: teamsError } = await supabase.from('teams').select('*')  const { data: matches, error: matchesError } = await supabase.from('matches').select('*').order('match_date', { ascending: true })    if(teamsError || matchesError) {    matchesDiv.innerHTML = '<p class="text-red-500">Erreur: ' + (teamsError?.message || matchesError?.message) + '</p>'    return  }
   if(!matches || matches.length === 0) {    matchesDiv.innerHTML = '<p>Aucun match</p>'    return  }
