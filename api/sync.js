@@ -1,38 +1,41 @@
-import { createClient } from '@supabase/supabase-js';
+js
+const { createClient } = require('@supabase/supabase-js');
 
-export default async function handler(req, res) {
-  // 1. Initialisation Supabase
+module.exports = async (req, res) => {
+  // Initialisation avec la variable d'environnement que vous avez créée
   const supabase = createClient(
     'https://cmufapilshppnqulbdrk.supabase.co',
-    'VOTRE_CLE_SERVICE_ROLE' // Trouvez "service_role" dans Supabase > Settings > API
+    process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 
   const API_KEY = 'fapi_4HHy3OycT7MKCAjhDQ9Kg9WvZHGltV9j';
 
   try {
-    // 2. Appel à l'API Football (exemple pour la Ligue 1)
     const response = await fetch('https://api.football-data.org/v4/competitions/FL1/matches', {
       headers: { 'X-Auth-Token': API_KEY }
     });
     const data = await response.json();
 
-    // 3. Boucle pour mettre à jour chaque match dans Supabase
-    const updates = data.matches.map(match => ({
-      id: match.id,
-      match_date: match.utcDate,
-      team_home_id: match.homeTeam.id,
-      team_away_id: match.awayTeam.id,
+    if (!data.matches) {
+        return res.status(500).json({ error: "Impossible de récupérer les matchs de l'API." });
+    }
+
+    // On prépare les données pour Supabase
+    const matches = data.matches.map(m => ({
+      id: m.id,
+      match_date: m.utcDate,
       league: 'Ligue 1',
-      status: match.status
-      // Ajoutez ici odd_1, odd_n, etc., si l'API les fournit
+      status: m.status,
+      team_home_id: 1, // Temporaire : à lier avec vos IDs réels plus tard
+      team_away_id: 2
     }));
 
-    const { error } = await supabase.from('matches').upsert(updates);
+    const { error } = await supabase.from('matches').upsert(matches);
 
     if (error) throw error;
 
-    return res.status(200).json({ message: "Synchro réussie !", count: updates.length });
-  } catch (error) {
-    return res.status(500).json({ error: error.message });
+    res.status(200).json({ success: true, message: `${matches.length} matchs synchronisés.` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-}
+};
