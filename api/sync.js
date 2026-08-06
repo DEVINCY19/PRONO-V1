@@ -1,58 +1,75 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-// Configuration
+// Configuration Supabase
 const SUPABASE_URL = 'https://cmufapilshppnqulbdrk.supabase.co';
-const SUPABASE_SERVICE_ROLE_KEY = 'VOTRE_SERVICE_ROLE_KEY'; // Utilisez la Service Role Key pour avoir les droits d'écriture
-const FOOTBALL_API_KEY = 'fapi_rEsxPYoepktkGTej7QYJkKNVg2ggq4h5';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNtdWZhcGlsc2hwcG5xdWxiZHJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0NDA4NzAsImV4cCI6MjEwMTAxNjg3MH0.UI0GKMfQgIGby_Tu_Q5Q4hOCpASxRe63pHLVr5lPOV0';
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+const grid = document.getElementById('display-grid');
+const btnMatchs = document.getElementById('btn-matchs');
 
-async function syncMatches() {
-    console.log("Démarrage de la synchronisation...");
+// Fonction pour afficher les petits badges de forme (V, D, N)
+function getFormBadges(formStr) {
+    if (!formStr) return '<span class="text-[9px] text-gray-600 italic">No Stats</span>';
+    return formStr.split('').map(res => {
+        let color = 'bg-gray-600';
+        if (res === 'V') color = 'bg-green-500';
+        if (res === 'D') color = 'bg-red-500';
+        if (res === 'N') color = 'bg-blue-500';
+        return `<span class="w-2.5 h-2.5 ${color} rounded-full inline-block mx-0.5 border border-black/20 shadow-sm"></span>`;
+    }).join('');
+}
+
+// Fonction principale pour charger les matchs
+async function loadMatchs() {
+    if (!grid) return;
+    grid.innerHTML = '<div class="col-span-full text-center py-20 italic text-gray-400">Calcul des probabilités en cours...</div>';
 
     try {
-        // 1. Récupération des données depuis l'API Football (Exemple pour la Ligue 1, ID 61)
-        const response = await fetch('https://v3.football.api-sports.io/fixtures?league=61&next=10', {
-            method: 'GET',
-            headers: {
-                'x-rapidapi-key': FOOTBALL_API_KEY,
-                'x-rapidapi-host': 'v3.football.api-sports.io'
-            }
-        });
-
-        const result = await response.json();
-
-        if (!result.response || result.response.length === 0) {
-            console.log("Aucun match trouvé sur l'API.");
-            return;
-        }
-
-        // 2. Formatage des données pour votre table Supabase
-        const matchesToInsert = result.response.map(item => ({
-            home_team: item.teams.home.name,
-            away_team: item.teams.away.name,
-            league: item.league.name,
-            match_date: item.fixture.date,
-            home_form: "VVNVD", // Vous pouvez calculer cela plus tard
-            away_form: "NVVDV",
-            // Ajoutez d'autres colonnes si nécessaire
-        }));
-
-        // 3. Nettoyage de l'ancienne table (Optionnel, dépend de votre stratégie)
-        await supabase.from('matches').delete().neq('id', 0); 
-
-        // 4. Insertion des nouveaux matchs
-        const { error } = await supabase
+        const { data: matches, error } = await supabase
             .from('matches')
-            .insert(matchesToInsert);
+            .select('*');
 
         if (error) throw error;
 
-        console.log(`${matchesToInsert.length} matchs synchronisés avec succès !`);
+        if (!matches || matches.length === 0) {
+            grid.innerHTML = '<div class="col-span-full text-center text-gray-500 py-20">Aucun match disponible pour le moment.</div>';
+            return;
+        }
+
+        // Affichage des cartes
+        grid.innerHTML = matches.map(match => `
+            <div class="bg-gray-800 border border-gray-700 rounded-3xl p-6 shadow-2xl hover:border-green-500/50 transition-all duration-300">
+                <div class="flex justify-between items-center mb-6">
+                    <span class="text-[10px] font-bold tracking-widest uppercase px-3 py-1 bg-gray-900 rounded-full border border-gray-700 text-gray-400">${match.league || 'Ligue'}</span>
+                    <span class="text-[10px] font-bold text-green-400 animate-pulse">LIVE ANALYSE</span>
+                </div>
+                <div class="space-y-4 mb-8">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-lg text-white">${match.home_team}</span>
+                        <div class="flex">${getFormBadges(match.home_form)}</div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-lg text-gray-400">${match.away_team}</span>
+                        <div class="flex">${getFormBadges(match.away_form)}</div>
+                    </div>
+                </div>
+                <button onclick="alert('Analyse détaillée en cours...')" class="w-full py-4 bg-gradient-to-r from-green-500 to-blue-600 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg hover:scale-[1.02] active:scale-95 transition-transform">Voir le Pronostic</button>
+            </div>
+        `).join('');
 
     } catch (error) {
-        console.error("Erreur de synchro :", error.message);
+        grid.innerHTML = `<div class="col-span-full text-center text-red-500 py-20">Erreur : ${error.message}</div>`;
     }
 }
 
-syncMatches();
+// Lancement au chargement
+document.addEventListener('DOMContentLoaded', loadMatchs);
+
+// Gérer le clic sur le bouton
+if (btnMatchs) {
+    btnMatchs.addEventListener('click', (e) => {
+        e.preventDefault();
+        loadMatchs();
+    });
+}
