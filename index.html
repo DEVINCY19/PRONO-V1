@@ -1,88 +1,69 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚽ Prono Foot Pro - IA & Premium</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        .match-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .match-card:hover { transform: translateY(-8px); border-color: #22c55e; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
-        .premium-card { animation: pulse-glow 2s infinite; }
-        @keyframes pulse-glow {
-            0% { box-shadow: 0 0 5px rgba(34, 197, 94, 0.2); }
-            50% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.5); }
-            100% { box-shadow: 0 0 5px rgba(34, 197, 94, 0.2); }
-        }
-        .glow-green { box-shadow: 0 0 15px rgba(34, 197, 94, 0.4); }
-    </style>
-</head>
-<body class="bg-gray-900 text-gray-100 min-h-screen">
-    <div class="container mx-auto px-4 py-8">
-        <header class="text-center mb-10">
-            <h1 class="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 italic uppercase tracking-tighter mb-2 text-center">PRONO FOOT PRO</h1>
-            <div class="inline-block bg-green-500/10 border border-green-500/20 px-4 py-1 rounded-full text-green-400 text-[10px] font-bold tracking-widest uppercase">Expertise IA & Analyse Premium</div>
-        </header>
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-        <!-- Navigation -->
-        <div class="flex justify-center space-x-4 mb-10">
-            <button id="btn-matchs" class="px-8 py-3 bg-green-600 rounded-2xl font-black text-white shadow-xl shadow-green-900/40 transition-all scale-105 uppercase tracking-wider">Matchs</button>
-            <button id="btn-resultats" class="px-8 py-3 bg-gray-800 rounded-2xl font-black text-gray-400 hover:text-white transition-all uppercase tracking-wider">Résultats</button>
-        </div>
+const SUPABASE_URL = 'https://cmufapilshppnqulbdrk.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNtdWZhcGlsc2hwcG5xdWxiZHJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0NDA4NzAsImV4cCI6MjEwMTAxNjg3MH0.UI0GKMfQgIGby_Tu_Q5Q4hOCpASxRe63pHLVr5lPOV0';
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        <!-- SECTION PREMIUM (Combiné en Or) -->
-        <div id="premium-picks" class="mb-12 hidden">
-            <div class="flex items-center gap-2 mb-6">
-                <span class="text-2xl">🔥</span>
-                <h2 class="text-xl font-black italic uppercase tracking-tighter text-green-400">Le Combiné en Or du Jour</h2>
+const grid = document.getElementById('display-grid');
+const btnMatchs = document.getElementById('btn-matchs');
+const btnResultats = document.getElementById('btn-resultats');
+
+// Fonction pour afficher les petits badges de forme (V, D, N)
+function getFormBadges(formStr) {
+    if (!formStr) return '<span class="text-[9px] text-gray-600 italic">No Stats</span>';
+    return formStr.split('').map(res => {
+        let color = 'bg-gray-600';
+        if (res === 'V') color = 'bg-green-500';
+        if (res === 'D') color = 'bg-red-500';
+        if (res === 'N') color = 'bg-blue-500';
+        return `<span class="w-2.5 h-2.5 ${color} rounded-full inline-block mx-0.5 border border-black/20 shadow-sm"></span>`;
+    }).join('');
+}
+
+// Fonction principale pour charger les matchs
+async function loadMatchs() {
+    grid.innerHTML = '<div class="col-span-full text-center py-20 italic">Calcul des probabilités en cours...</div>';
+
+    const { data: matches, error } = await supabase
+        .from('matches')
+        .select('*'); // Correction ici : ajout du select
+
+    if (error) {
+        grid.innerHTML = `<div class="col-span-full text-center text-red-500">Erreur : ${error.message}</div>`;
+        return;
+    }
+
+    if (!matches || matches.length === 0) {
+        grid.innerHTML = '<div class="col-span-full text-center text-gray-500">Aucun match disponible pour le moment.</div>';
+        return;
+    }
+
+    // Affichage des cartes
+    grid.innerHTML = matches.map(match => `
+        <div class="bg-gray-800 border border-gray-700 rounded-3xl p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <span class="text-[10px] font-bold tracking-widest uppercase px-3 py-1 bg-gray-900 rounded-full border border-gray-700 text-gray-400">${match.league || 'Ligue'}</span>
+                <span class="text-[10px] font-bold text-green-400 animate-pulse">LIVE ANALYSE</span>
             </div>
-            <div id="premium-grid" class="grid gap-6 sm:grid-cols-1 md:grid-cols-3">
-                <!-- Injecté par JS -->
+            <div class="space-y-4 mb-8">
+                <div class="flex justify-between items-center">
+                    <span class="font-bold text-lg">${match.home_team}</span>
+                    <div class="flex">${getFormBadges(match.home_form)}</div>
+                </div>
+                <div class="flex justify-between items-center text-gray-400">
+                    <span class="font-bold text-lg">${match.away_team}</span>
+                    <div class="flex">${getFormBadges(match.away_form)}</div>
+                </div>
             </div>
+            <button onclick="alert('Analyse détaillée en cours...')" class="w-full py-4 bg-gradient-to-r from-green-500 to-blue-600 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg">Voir le Pronostic</button>
         </div>
+    `).join('');
+}
 
-        <!-- GRILLE PRINCIPALE -->
-        <div id="display-grid" class="grid gap-8 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            <div class="col-span-full text-center py-20 animate-pulse text-gray-500 italic">Initialisation de l'analyse IA...</div>
-        </div>
-    </div>
+// CRUCIAL : Lancer la fonction au chargement de la page
+window.addEventListener('DOMContentLoaded', loadMatchs);
 
-    <script type="module">
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-        
-        const SUPABASE_URL = 'https://cmufapilshppnqulbdrk.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNtdWZhcGlsc2hwcG5xdWxiZHJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0NDA4NzAsImV4cCI6MjEwMTAxNjg3MH0.UI0GKMfQgIGby_Tu_Q5Q4hOCpASxRe63pHLVr5lPOV0';
-        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        const grid = document.getElementById('display-grid');
-        const premiumDiv = document.getElementById('premium-picks');
-        const premiumGrid = document.getElementById('premium-grid');
-        const btnMatchs = document.getElementById('btn-matchs');
-        const btnResultats = document.getElementById('btn-resultats');
-
-        function getFormBadges(formStr) {
-            if (!formStr) return '<span class="text-[9px] text-gray-600 italic">No Stats</span>';
-            return formStr.split('').map(res => {
-                let color = 'bg-gray-600';
-                if (res === 'V') color = 'bg-green-500';
-                if (res === 'D') color = 'bg-red-500';
-                if (res === 'N') color = 'bg-blue-500';
-                return `<span class="w-2.5 h-2.5 ${color} rounded-full inline-block mx-0.5 border border-black/20 shadow-sm"></span>`;
-            }).join('');
-        }
-
-        window.parier = (equipe, cote) => {
-            alert(`🎯 ANALYSE IA : Votre choix (${equipe}) avec une cote de ${cote} présente une probabilité de succès élevée selon nos calculs.`);
-        };
-
-        async function loadMatchs() {
-            btnMatchs.className = 'px-8 py-3 bg-green-600 rounded-2xl font-black text-white shadow-xl shadow-green-900/40 transition-all scale-105';
-            btnResultats.className = 'px-8 py-3 bg-gray-800 rounded-2xl font-black text-gray-400 hover:text-white transition-all';
-            grid.innerHTML = '<div class="col-span-full text-center py-20 italic">Calcul des probabilités en cours...</div>';
-
-            const { data: matches, error } = await supabase
-                .from('matches')
+// Gérer les clics sur les boutons de navigation
+btnMatchs.addEventListener('click', loadMatchs);
                 .
 
