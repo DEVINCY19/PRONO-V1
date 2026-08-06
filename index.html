@@ -2,33 +2,23 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analyse Live Foot</title>
-    <!-- Chargement de Tailwind CSS -->
+    <title>Mon Site de Foot</title>
+    <!-- On met Tailwind ici pour le design -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { background-color: #0f172a; } /* Couleur sombre pour éviter l'écran noir */
-    </style>
 </head>
-<body class="text-white font-sans">
+<body class="bg-gray-900 text-white">
 
-    <div class="container mx-auto px-4 py-8">
-        <header class="flex justify-between items-center mb-10">
-            <h1 class="text-2xl font-black tracking-tighter uppercase italic text-green-500">LiveStats Pro</h1>
-            <nav class="space-x-4">
-                <button id="btn-matchs" class="px-4 py-2 bg-gray-800 rounded-lg border border-gray-700 hover:bg-gray-700 transition">Matchs</button>
-                <button id="btn-resultats" class="px-4 py-2 bg-gray-800 rounded-lg border border-gray-700 hover:bg-gray-700 transition">Résultats</button>
-            </nav>
-        </header>
-
-        <!-- La grille où les matchs vont s'afficher -->
-        <div id="display-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <!-- Le JavaScript injectera le contenu ici -->
+    <!-- LE CODE HTML VA ICI -->
+    <div class="container mx-auto p-6">
+        <h1 class="text-3xl font-bold mb-6 text-green-500">Matchs à venir</h1>
+        
+        <!-- C'est cet élément que le JS va remplir -->
+        <div id="display-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Vide au départ, le JS va travailler ici -->
         </div>
     </div>
 
-    <!-- Chargement du script API -->
-    <script type="module" src="api.js"></script>
+    <!-- ON APPELLE LE FICHIER JS ICI -->
+    <script type="module" src="api_sync.js"></script>
 </body>
 </html>
-
