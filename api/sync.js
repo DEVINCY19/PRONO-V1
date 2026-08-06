@@ -1,52 +1,58 @@
-js
-// api/sync.js
-export default async function handler(req, res) {
-  try {
-    const API_KEY = process.env.API_FOOTBALL_KEY;
-    const SUPABASE_URL = process.env.SUPABASE_URL;
-    const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+import { createClient } from '@supabase/supabase-js';
 
-    if (!API_KEY || !SUPABASE_URL || !SUPABASE_KEY) {
-      throw new Error("Clés manquantes dans Vercel");
+// Configuration
+const SUPABASE_URL = 'https://cmufapilshppnqulbdrk.supabase.co';
+const SUPABASE_SERVICE_ROLE_KEY = 'VOTRE_SERVICE_ROLE_KEY'; // Utilisez la Service Role Key pour avoir les droits d'écriture
+const FOOTBALL_API_KEY = 'fapi_rEsxPYoepktkGTej7QYJkKNVg2ggq4h5';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+async function syncMatches() {
+    console.log("Démarrage de la synchronisation...");
+
+    try {
+        // 1. Récupération des données depuis l'API Football (Exemple pour la Ligue 1, ID 61)
+        const response = await fetch('https://v3.football.api-sports.io/fixtures?league=61&next=10', {
+            method: 'GET',
+            headers: {
+                'x-rapidapi-key': FOOTBALL_API_KEY,
+                'x-rapidapi-host': 'v3.football.api-sports.io'
+            }
+        });
+
+        const result = await response.json();
+
+        if (!result.response || result.response.length === 0) {
+            console.log("Aucun match trouvé sur l'API.");
+            return;
+        }
+
+        // 2. Formatage des données pour votre table Supabase
+        const matchesToInsert = result.response.map(item => ({
+            home_team: item.teams.home.name,
+            away_team: item.teams.away.name,
+            league: item.league.name,
+            match_date: item.fixture.date,
+            home_form: "VVNVD", // Vous pouvez calculer cela plus tard
+            away_form: "NVVDV",
+            // Ajoutez d'autres colonnes si nécessaire
+        }));
+
+        // 3. Nettoyage de l'ancienne table (Optionnel, dépend de votre stratégie)
+        await supabase.from('matches').delete().neq('id', 0); 
+
+        // 4. Insertion des nouveaux matchs
+        const { error } = await supabase
+            .from('matches')
+            .insert(matchesToInsert);
+
+        if (error) throw error;
+
+        console.log(`${matchesToInsert.length} matchs synchronisés avec succès !`);
+
+    } catch (error) {
+        console.error("Erreur de synchro :", error.message);
     }
-
-    // 1. Appel simple à l'API
-    const apiUrl = `https://api.thestatsapi.com/api/football/matches?competition_id=16`;
-    const apiRes = await fetch(apiUrl, {
-      headers: { 'x-api-key': API_KEY, 'Accept': 'application/json' }
-    });
-
-    const data = await apiRes.json();
-    if (!apiRes.ok) throw new Error("API error: " + JSON.stringify(data));
-
-    const matchesList = data.data || data;
-
-    const matches = matchesList.map(m => ({
-      id: m.id,
-      match_date: m.date || m.start_date || new Date().toISOString(),
-      league: "Ligue 1",
-      status: m.status,
-      team_home_id: m.home_team_id,
-      team_away_id: m.away_team_id,
-      team_home_name: m.home_team_name,
-      team_away_name: m.away_team_name
-    }));
-
-    // 2. Envoi à Supabase
-    const dbRes = await fetch(`${SUPABASE_URL}/rest/v1/matches`, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'resolution=merge-duplicates'
-      },
-      body: JSON.stringify(matches)
-    });
-
-    return res.status(200).json({ success: true, count: matches.length });
-
-  } catch (err) {
-    return res.status(500).json({ error: "ECHEC: " + err.message });
-  }
 }
+
+syncMatches();
