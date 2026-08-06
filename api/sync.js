@@ -1,75 +1,38 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-// Configuration Supabase
 const SUPABASE_URL = 'https://cmufapilshppnqulbdrk.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNtdWZhcGlsc2hwcG5xdWxiZHJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0NDA4NzAsImV4cCI6MjEwMTAxNjg3MH0.UI0GKMfQgIGby_Tu_Q5Q4hOCpASxRe63pHLVr5lPOV0';
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const grid = document.getElementById('display-grid');
-const btnMatchs = document.getElementById('btn-matchs');
 
-// Fonction pour afficher les petits badges de forme (V, D, N)
-function getFormBadges(formStr) {
-    if (!formStr) return '<span class="text-[9px] text-gray-600 italic">No Stats</span>';
-    return formStr.split('').map(res => {
-        let color = 'bg-gray-600';
-        if (res === 'V') color = 'bg-green-500';
-        if (res === 'D') color = 'bg-red-500';
-        if (res === 'N') color = 'bg-blue-500';
-        return `<span class="w-2.5 h-2.5 ${color} rounded-full inline-block mx-0.5 border border-black/20 shadow-sm"></span>`;
-    }).join('');
-}
-
-// Fonction principale pour charger les matchs
 async function loadMatchs() {
     if (!grid) return;
-    grid.innerHTML = '<div class="col-span-full text-center py-20 italic text-gray-400">Calcul des probabilités en cours...</div>';
+    grid.innerHTML = '<p>Chargement des matchs...</p>';
 
-    try {
-        const { data: matches, error } = await supabase
-            .from('matches')
-            .select('*');
+    const { data: matches, error } = await supabase
+        .from('matches') // Nom de votre table dans Supabase
+        .select('*');
 
-        if (error) throw error;
-
-        if (!matches || matches.length === 0) {
-            grid.innerHTML = '<div class="col-span-full text-center text-gray-500 py-20">Aucun match disponible pour le moment.</div>';
-            return;
-        }
-
-        // Affichage des cartes
-        grid.innerHTML = matches.map(match => `
-            <div class="bg-gray-800 border border-gray-700 rounded-3xl p-6 shadow-2xl hover:border-green-500/50 transition-all duration-300">
-                <div class="flex justify-between items-center mb-6">
-                    <span class="text-[10px] font-bold tracking-widest uppercase px-3 py-1 bg-gray-900 rounded-full border border-gray-700 text-gray-400">${match.league || 'Ligue'}</span>
-                    <span class="text-[10px] font-bold text-green-400 animate-pulse">LIVE ANALYSE</span>
-                </div>
-                <div class="space-y-4 mb-8">
-                    <div class="flex justify-between items-center">
-                        <span class="font-bold text-lg text-white">${match.home_team}</span>
-                        <div class="flex">${getFormBadges(match.home_form)}</div>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="font-bold text-lg text-gray-400">${match.away_team}</span>
-                        <div class="flex">${getFormBadges(match.away_form)}</div>
-                    </div>
-                </div>
-                <button onclick="alert('Analyse détaillée en cours...')" class="w-full py-4 bg-gradient-to-r from-green-500 to-blue-600 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg hover:scale-[1.02] active:scale-95 transition-transform">Voir le Pronostic</button>
-            </div>
-        `).join('');
-
-    } catch (error) {
-        grid.innerHTML = `<div class="col-span-full text-center text-red-500 py-20">Erreur : ${error.message}</div>`;
+    if (error) {
+        grid.innerHTML = `<p style="color:red">Erreur : ${error.message}</p>`;
+        return;
     }
+
+    grid.innerHTML = matches.map(match => `
+        <div class="bg-gray-800 p-6 rounded-2xl border border-gray-700">
+            <div class="text-xs text-green-400 font-bold mb-2">${match.league}</div>
+            <div class="flex justify-between font-bold text-lg">
+                <span>${match.team_home}</span>
+                <span class="text-gray-500">${match.lambda_home || ''}</span>
+            </div>
+            <div class="flex justify-between font-bold text-lg">
+                <span>${match.team_away}</span>
+                <span class="text-gray-500">${match.lambda_away || ''}</span>
+            </div>
+        </div>
+    `).join('');
 }
 
-// Lancement au chargement
+// Déclenche le chargement dès que la page est prête
 document.addEventListener('DOMContentLoaded', loadMatchs);
-
-// Gérer le clic sur le bouton
-if (btnMatchs) {
-    btnMatchs.addEventListener('click', (e) => {
-        e.preventDefault();
-        loadMatchs();
-    });
-}
